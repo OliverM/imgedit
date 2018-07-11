@@ -24,7 +24,7 @@
      Y2 = number
      WIDTH = number
      HEIGHT = number
-     number = #'[0-9]+'
+     number = #'[1-9][0-9]*'
      ws = #'\\s+'
      "))
 
