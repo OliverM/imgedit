@@ -1,6 +1,7 @@
 (ns imgedit.core
   (:require [instaparse.core :as insta]
-            [clojure.spec.alpha :as s])
+            [clojure.spec.alpha :as s]
+            [clojure.spec.gen.alpha :as gen])
   (:gen-class))
 
 (def command-parser
@@ -50,27 +51,27 @@
 
 ;; parameter specs
 (def XY-MAX 250)
-(s/def ::coord-value (s/and pos-int? #(< 1 % XY-MAX)))
-(s/def ::coord-name #{:X :Y})
-(s/def ::coord (s/tuple ::coord-name ::coord-value))
-(s/def ::coord-pair-name #{:XS :YS})
-(s/def ::coord-pair (s/tuple ::coord-pair-name ::coord-value ::coord-value))
-(s/def ::dimension-name #{:WIDTH :HEIGHT})
-(s/def ::dimension (s/tuple ::dimension-name ::coord-value))
+(s/def ::coord-value (s/and pos-int? #(<= 1 % XY-MAX)))
+(s/def ::x-coord (s/tuple #{:X} ::coord-value))
+(s/def ::y-coord (s/tuple #{:Y} ::coord-value))
+(s/def ::x-coord-pair (s/tuple #{:XS} ::coord-value ::coord-value))
+(s/def ::y-coord-pair (s/tuple #{:YS} ::coord-value ::coord-value))
+(s/def ::width (s/tuple #{:WIDTH} ::coord-value))
+(s/def ::height (s/tuple #{:HEIGHT} ::coord-value))
 (s/def ::colour-value char?)
 (s/def ::colour (s/tuple #{:COLOUR} ::colour-value))
-(s/def ::param (s/or :dimension ::dimension
-                     :coord ::coord
-                     :coord-pair ::coord-pair
+(s/def ::param (s/or :width ::width :height ::height
+                     :x-coord ::x-coord :y-coord ::y-coord
+                     :x-coord-pair ::x-coord-pair :y-coord-pair ::y-coord-pair
                      :colour ::colour))
 
 ;; command specs
-(s/def ::new-image (s/tuple #{:NEW} ::dimension ::dimension))
+(s/def ::new-image (s/tuple #{:NEW} ::width ::height))
 (s/def ::clear-image (s/tuple #{:CLEAR}))
-(s/def ::pixel (s/tuple #{:PIXEL} ::coord ::coord ::colour))
-(s/def ::vertical (s/tuple #{:VERTICAL} ::coord ::coord-pair ::colour))
-(s/def ::horizontal (s/tuple #{:HORIZONTAL} ::coord-pair ::coord ::colour))
-(s/def ::fill (s/tuple #{:FILL} ::coord ::coord ::colour))
+(s/def ::pixel (s/tuple #{:PIXEL} ::x-coord ::y-coord ::colour))
+(s/def ::vertical (s/tuple #{:VERTICAL} ::x-coord ::y-coord-pair ::colour))
+(s/def ::horizontal (s/tuple #{:HORIZONTAL} ::x-coord-pair ::y-coord ::colour))
+(s/def ::fill (s/tuple #{:FILL} ::x-coord ::y-coord ::colour))
 (s/def ::show (s/tuple #{:SHOW}))
 (s/def ::quit (s/tuple #{:QUIT}))
 
@@ -85,6 +86,7 @@
                            :show ::show
                            :quit ::quit)))
 
+
 ;; image specs
 (s/def :image/width ::coord-value)
 (s/def :image/height ::coord-value)
@@ -92,8 +94,10 @@
 (s/def ::image (s/keys :req [:image/width :image/height :image/pixels]))
 
 (def init-state #:image{:width 0 :height 0 :pixels {}})
-(def test-image #:image{:width 20 :height 20 :pixels {}})
-(def test-image2 #:image{:width 20 :height 20 :pixels {[1 5] \I}})
+(def pass-image #:image{:width 250 :height 250 :pixels {[1 1] \I
+                                                        [0 251] \F}})
+
+
 
 
 (defn -main
