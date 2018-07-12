@@ -55,6 +55,6 @@ Please provide an executable solution with any source files in a common archive 
 ## Assumptions & Ambiguities
 - The spec above stipulates arguments are separated by a single space; for ease of use I've relaxed this to one or more spaces
 - The spec says nothing about communication of parsing errors, so I've stuck to Instaparse's default for this, and leveraged it further by insisting numbers begin with 1 at the parsing level, rather than accepting numbers like "04"
-
+- The spec doesn't constrain the set of colours but I've restricted them to the character range A-Z.
 ## Running the project
 The project is implemented in Clojure.
