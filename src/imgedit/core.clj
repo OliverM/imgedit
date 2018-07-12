@@ -41,27 +41,30 @@
     (insta/transform
       {:X #(single-tag :X %)
        :Y #(single-tag :Y %)
-       :XS #(double-tag :Y %1 %2)
-       :YS #(double-tag :Y %1 %2)
+       :XS #(double-tag :XS %1 %2)
+       :YS #(double-tag :YS %1 %2)
        :WIDTH #(single-tag :WIDTH %)
-       :HEIGHT #(single-tag :HEIGHT %)}
+       :HEIGHT #(single-tag :HEIGHT %)
+       :COLOUR #(vector :COLOUR (first %))}
       parsed-command)))
 
+;; parameter specs
 (def XY-MAX 250)
-(s/def ::coord-value (s/and int? #(< 1 % XY-MAX)))
+(s/def ::coord-value (s/and pos-int? #(< 1 % XY-MAX)))
 (s/def ::coord-name #{:X :Y})
 (s/def ::coord (s/tuple ::coord-name ::coord-value))
 (s/def ::coord-pair-name #{:XS :YS})
 (s/def ::coord-pair (s/tuple ::coord-pair-name ::coord-value ::coord-value))
 (s/def ::dimension-name #{:WIDTH :HEIGHT})
 (s/def ::dimension (s/tuple ::dimension-name ::coord-value))
-(s/def ::colour-value (s/and string? #(re-matches #"[A-Z]" %)))
+(s/def ::colour-value char?)
 (s/def ::colour (s/tuple #{:COLOUR} ::colour-value))
 (s/def ::param (s/or :dimension ::dimension
                      :coord ::coord
                      :coord-pair ::coord-pair
                      :colour ::colour))
 
+;; command specs
 (s/def ::new-image (s/tuple #{:NEW} ::dimension ::dimension))
 (s/def ::clear-image (s/tuple #{:CLEAR}))
 (s/def ::pixel (s/tuple #{:PIXEL} ::coord ::coord ::colour))
@@ -81,6 +84,17 @@
                            :fill ::fill
                            :show ::show
                            :quit ::quit)))
+
+;; image specs
+(s/def :image/width ::coord-value)
+(s/def :image/height ::coord-value)
+(s/def :image/pixels (s/map-of (s/tuple ::coord-value ::coord-value) char?))
+(s/def ::image (s/keys :req [:image/width :image/height :image/pixels]))
+
+(def init-state #:image{:width 0 :height 0 :pixels {}})
+(def test-image #:image{:width 20 :height 20 :pixels {}})
+(def test-image2 #:image{:width 20 :height 20 :pixels {[1 5] \I}})
+
 
 (defn -main
   "I don't do a whole lot ... yet."
