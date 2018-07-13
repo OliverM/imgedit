@@ -91,27 +91,80 @@
 (s/def :image/pixels (s/map-of (s/tuple ::coord-value ::coord-value) char?))
 (s/def ::image (s/keys :req [:image/width :image/height :image/pixels]))
 
-(defmulti command #(-> % second first))
-(defmethod command :NEW
-  [[_ [_ [_ width] [_ height]]]]
-  )
-(defmethod command :CLEAR
-  [_])
-(defmethod command :HORIZONTAL
-  [[_ [_]]])
-(defmethod command :PIXEL
-  [[_ [_]]])
-(defmethod command :VERTICAL
-  [[_ [_]]])
-(defmethod command :FILL
-  [[_ [_]]])
-(defmethod command :SHOW
-  [_])
-(defmethod command :QUIT
-  [_])
+(defn check-dimension [{:keys [image/width image/height]} [dimension value]]
+  (case dimension
+    :X (<= value width)
+    :XS (let [[x1 x2] value] (and (<= x1 width) (<= x2 width)))
+    :Y (<= value height)
+    :YS (let [[y1 y2] value] (and (<= y1 height) (<= y2 height)))))
 
+(defn new-image
+  [width height]
+  #:image{:width width :height height :pixels {}})
+
+(defn clear
+  [image]
+  (assoc image :image/pixels {}))
+
+(defn pixel
+  [image [_ x :as x-coord] [_ y :as y-coord] c]
+  (assoc-in image [:image/pixels [x y]] c))
+
+(defn vertical-line
+  [image x-coord y-coord-pair c]
+  image)
+
+(defn horizontal-line
+  [image x-coord-pair y-coord c]
+  image)
+
+(defn fill
+  [image x-coord y-coord c]
+  image)
+
+(defn show
+  [image]
+  image)
+
+(defn quit
+  [image]
+  image)
+
+;; you can't spec defmethods as fully as functions, so here I'm only using the
+;; defmulti command* to invoke the correct command function based on the command
+;; tag
+(defmulti command* (fn [_ [_ [command-tag _]]] command-tag))
+(defmethod command* :NEW
+  [image [_ [_ [_ w] [_ h]]]] (new-image w h))
+(defmethod command* :CLEAR
+  [image command] (clear image))
+(defmethod command* :PIXEL
+  [image [_ [_ x-coord y-coord colour]]]
+  (pixel image x-coord y-coord colour))
+(defmethod command* :VERTICAL
+  [image [_ [_ x-coord y-coord-pair colour]]]
+  (vertical-line image x-coord y-coord-pair colour))
+(defmethod command* :HORIZONTAL
+  [image [_ [_ x-coord-pair y-coord colour]]]
+  (horizontal-line image x-coord-pair y-coord colour))
+(defmethod command* :FILL
+  [image [_ [_ x-coord y-coord colour]]]
+  (fill image x-coord y-coord colour))
+(defmethod command* :SHOW
+  [image command] (show image))
+(defmethod command* :QUIT
+  [image command] (quit image))
+
+(defn pump
+  [image]
+  (let [command (param-transform (command-parser (read-line)))]
+    (if (s/valid? ::command command)
+      (recur (command* image command))
+      (do
+        (s/explain ::command command)
+        (recur image)))))
 
 (defn -main
-  "I don't do a whole lot ... yet."
+  "Main entry point. Launch the interactive session with a default blank image."
   [& args]
-  (println "Hello, World!"))
+  (pump (new-image 10 10)))
