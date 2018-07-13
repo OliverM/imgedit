@@ -156,6 +156,9 @@
   [image command] (quit image))
 
 (defn pump
+  "Handle user input and maintain state. Each pump invocation accepts and returns
+  an image, either unchanged if the input was erroneous or with the command
+  applied if not."
   [image]
   (let [command (param-transform (command-parser (read-line)))]
     (if (s/valid? ::command command)
