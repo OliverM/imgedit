@@ -74,7 +74,6 @@
 (s/def ::fill (s/tuple #{:FILL} ::x-coord ::y-coord ::colour))
 (s/def ::show (s/tuple #{:SHOW}))
 (s/def ::quit (s/tuple #{:QUIT}))
-
 (s/def ::command (s/tuple #{:COMMAND}
                           (s/or
                            :new ::new-image
@@ -86,16 +85,11 @@
                            :show ::show
                            :quit ::quit)))
 
-
 ;; image specs
 (s/def :image/width ::coord-value)
 (s/def :image/height ::coord-value)
 (s/def :image/pixels (s/map-of (s/tuple ::coord-value ::coord-value) char?))
 (s/def ::image (s/keys :req [:image/width :image/height :image/pixels]))
-
-(def init-state #:image{:width 0 :height 0 :pixels {}})
-(def pass-image #:image{:width 250 :height 250 :pixels {[1 1] \I
-                                                        [0 251] \F}})
 
 
 
