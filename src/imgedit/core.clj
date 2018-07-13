@@ -91,11 +91,24 @@
 (s/def :image/pixels (s/map-of (s/tuple ::coord-value ::coord-value) char?))
 (s/def ::image (s/keys :req [:image/width :image/height :image/pixels]))
 
-(defmulti command #(-> % first second))
+(defmulti command #(-> % second first))
 (defmethod command :NEW
-  [_ [_ [_ width] [_ height]]]
-  (println (str width height))
+  [[_ [_ [_ width] [_ height]]]]
   )
+(defmethod command :CLEAR
+  [_])
+(defmethod command :HORIZONTAL
+  [[_ [_]]])
+(defmethod command :PIXEL
+  [[_ [_]]])
+(defmethod command :VERTICAL
+  [[_ [_]]])
+(defmethod command :FILL
+  [[_ [_]]])
+(defmethod command :SHOW
+  [_])
+(defmethod command :QUIT
+  [_])
 
 
 (defn -main
