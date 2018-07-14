@@ -109,7 +109,7 @@
   (assoc image :image/pixels {}))
 
 (defn pixel
-  [image [_ x :as x-coord] [_ y :as y-coord] c]
+  [image [_ x :as x-coord] [_ y :as y-coord] [_ c]]
   (assoc-in image [:image/pixels [x y]] c))
 
 (defn vertical-line
@@ -124,39 +124,38 @@
                  [[:X x] [:Y y] c])]
     (reduce #(apply pixel %1 %2) image pixels)))
 
-
 (defn- matching-neighbours
   "Given an image, an [x, y] co-ordinate and a colour, return the neighbours of
   that point matching that colour. Neighbours are contiguous (they share a side)."
   [{:keys [image/width image/height image/pixels]} [x y] c]
   (for [dx [(dec x) x (inc x)]
         dy [(dec y) y (inc y)]
-        :when (and (>= dx 1)
+        :when (and (>= dx 1) ;; check in bounds of image...
                 (>= dy 1)
                 (<= dx width)
                 (<= dy height)
-                (or (= x dx) (= y dy))
-                (not (and (= x dx) (= y dy)))
-                (= c (get pixels [dx dy] \O)))]
+                (or (= x dx) (= y dy)) ;; and not corner pixel to pixel
+                (not (and (= x dx) (= y dy))) ;; and not same pixel
+                (= c (get pixels [dx dy] \O)))] ;; and has same colour
     [dx dy]))
 
-(defn fill [{:keys [image/pixels] :as image}
-            [_ x :as x-coord] [_ y :as y-coord] c]
-  (let [source-colour (get pixels [x y] \O)]
+(defn fill [image [_ x :as x-coord] [_ y :as y-coord] c]
+  (let [source-colour (get-in image [:image/pixels [x y]] \O)]
     (loop [image image
            candidates [[x y]]]
       (if (empty? candidates)
         image
         (let [[cx cy] (first candidates)
-              updated-image (assoc-in image [:image/pixels [cx cy]] c)]
+              updated-image (pixel image [:X cx] [:Y cy] c)]
           (recur
             updated-image
             (into (next candidates)
               (matching-neighbours updated-image [cx cy] source-colour))))))))
 
 (defn show
-  "Meets the spec of a default colour of 'O' by using it as the not-found value
-  for get (when no pixels have been written to that [x y] position)."
+  "Display an image. Meets the spec of a default colour of 'O' by using it as the
+  not-found value for get (when no pixels have been written to that [x y]
+  position)."
   [{:keys [image/width image/height image/pixels] :as image}]
   (let [image-lines (partition width
                       (for [y (range 1 (inc height))
@@ -200,6 +199,7 @@
   applied if not."
   [image]
   (print "> ")
+  (flush)
   (let [command (param-transform (command-parser (read-line)))]
     (if (s/valid? ::command command)
       (recur (command* image command))
