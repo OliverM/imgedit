@@ -123,7 +123,14 @@
   image)
 
 (defn show
-  [image]
+  [{:keys [image/width image/height image/pixels] :as image}]
+  (let [image-lines (partition width
+                      (for [x (range 1 (inc width))
+                            y (range 1 (inc height))]
+                        (get pixels [x y] \O)))]
+    (doseq [line image-lines]
+      (run! print line)
+      (newline)))
   image)
 
 (defn quit
@@ -160,6 +167,7 @@
   an image, either unchanged if the input was erroneous or with the command
   applied if not."
   [image]
+  (print "> ")
   (let [command (param-transform (command-parser (read-line)))]
     (if (s/valid? ::command command)
       (recur (command* image command))
