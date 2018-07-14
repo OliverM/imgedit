@@ -91,7 +91,9 @@
 (s/def :image/pixels (s/map-of (s/tuple ::coord-value ::coord-value) char?))
 (s/def ::image (s/keys :req [:image/width :image/height :image/pixels]))
 
-(defn check-dimension [{:keys [image/width image/height]} [dimension value]]
+(defn in-bounds?
+  "Is the supplied dimension in bounds of the supplied image?"
+  [{:keys [image/width image/height]} [dimension value]]
   (case dimension
     :X (<= value width)
     :XS (let [[x1 x2] value] (and (<= x1 width) (<= x2 width)))
@@ -122,9 +124,35 @@
                  [[:X x] [:Y y] c])]
     (reduce #(apply pixel %1 %2) image pixels)))
 
-(defn fill
-  [image x-coord y-coord c]
-  image)
+
+(defn- matching-neighbours
+  "Given an image, an [x, y] co-ordinate and a colour, return the neighbours of
+  that point matching that colour. Neighbours are contiguous (they share a side)."
+  [{:keys [image/width image/height image/pixels]} [x y] c]
+  (for [dx [(dec x) x (inc x)]
+        dy [(dec y) y (inc y)]
+        :when (and (>= dx 1)
+                (>= dy 1)
+                (<= dx width)
+                (<= dy height)
+                (or (= x dx) (= y dy))
+                (not (and (= x dx) (= y dy)))
+                (= c (get pixels [dx dy] \O)))]
+    [dx dy]))
+
+(defn fill [{:keys [image/pixels] :as image}
+            [_ x :as x-coord] [_ y :as y-coord] c]
+  (let [source-colour (get pixels [x y] \O)]
+    (loop [image image
+           candidates [[x y]]]
+      (if (empty? candidates)
+        image
+        (let [[cx cy] (first candidates)
+              updated-image (assoc-in image [:image/pixels [cx cy]] c)]
+          (recur
+            updated-image
+            (into (next candidates)
+              (matching-neighbours updated-image [cx cy] source-colour))))))))
 
 (defn show
   "Meets the spec of a default colour of 'O' by using it as the not-found value
