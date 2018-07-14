@@ -111,26 +111,30 @@
   (assoc-in image [:image/pixels [x y]] c))
 
 (defn vertical-line
-  [image x-coord y-coord-pair c]
-  image)
+  [image [_ x :as x-coord] [_ y1 y2 :as y-coord-pair] c]
+  (let [pixels (for [y (range (min y1 y2) (inc (max y1 y2)))]
+                 [[:X x] [:Y y] c])]
+    (reduce #(apply pixel %1 %2) image pixels)))
 
 (defn horizontal-line
-  [image x-coord-pair y-coord c]
-  image)
+  [image [_ x1 x2 :as x-coord-pair] [_ y :as y-coord] c]
+  (let [pixels (for [x (range (min x1 x2) (inc (max x1 x2)))]
+                 [[:X x] [:Y y] c])]
+    (reduce #(apply pixel %1 %2) image pixels)))
 
 (defn fill
   [image x-coord y-coord c]
   image)
 
 (defn show
+  "Meets the spec of a default colour of 'O' by using it as the not-found value
+  for get (when no pixels have been written to that [x y] position)."
   [{:keys [image/width image/height image/pixels] :as image}]
   (let [image-lines (partition width
-                      (for [x (range 1 (inc width))
-                            y (range 1 (inc height))]
+                      (for [y (range 1 (inc height))
+                            x (range 1 (inc width))]
                         (get pixels [x y] \O)))]
-    (doseq [line image-lines]
-      (run! print line)
-      (newline)))
+    (doseq [line image-lines] (run! print line) (newline)))
   image)
 
 (defn quit
