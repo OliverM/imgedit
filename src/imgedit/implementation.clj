@@ -3,12 +3,25 @@
 
 (defn in-bounds?
   "Is the supplied dimension in bounds of the supplied image?"
-  [{:keys [image/width image/height]} [dimension value]]
+  [{:keys [image/width image/height]} [dimension & value]]
   (case dimension
-    :X (<= value width)
+    :X (<= (first value) width)
     :XS (let [[x1 x2] value] (and (<= x1 width) (<= x2 width)))
-    :Y (<= value height)
+    :Y (<= (first value) height)
     :YS (let [[y1 y2] value] (and (<= y1 height) (<= y2 height)))))
+
+(defn command-in-bounds?
+  "Check if the supplied conformed command is in bounds of the supplied image.
+  Leverages the structure of pixel-oriented commands in that the first two
+  command arguments are always the positional arguments. Commands without pixel
+  arguments are within bounds by default."
+  [image command]
+  (let [[_ [_ [command-type & command-args]]] command]
+    (if (#{:PIXEL :VERTICAL :HORIZONTAL :FILL} command-type)
+      (and
+        (in-bounds? image (first command-args))
+        (in-bounds? image (second command-args)))
+      true)))
 
 (defn every-pixel-in-bounds?
   "Test an image's pixel entries are all within its bounds. Primarily useful as

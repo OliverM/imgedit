@@ -17,10 +17,10 @@
   (print "> ")
   (flush)
   (let [command (p/parse (read-line))]
-    (if (s/valid? ::is/command command)
+    (if (s/valid? ::is/image-command [image command])
       (recur (is/command* image command))
       (do
-        (s/explain ::is/command command)
+        (s/explain ::is/image-command [image command])
         (recur image)))))
 
 (defn -main

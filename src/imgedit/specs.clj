@@ -1,5 +1,6 @@
 (ns imgedit.specs
   (:require [clojure.spec.alpha :as s]
+            [clojure.spec.gen.alpha :as gen]
             [imgedit.implementation :as impl]))
 
 ;; parameter specs
@@ -18,7 +19,7 @@
                      :x-coord-pair ::x-coord-pair :y-coord-pair ::y-coord-pair
                      :colour ::colour))
 
-;; command specs
+;; command specs, checking argument order and presence
 (s/def ::new-image (s/tuple #{:NEW} ::width ::height))
 (s/def ::clear-image (s/tuple #{:CLEAR}))
 (s/def ::pixel (s/tuple #{:PIXEL} ::x-coord ::y-coord ::colour))
@@ -27,7 +28,7 @@
 (s/def ::fill (s/tuple #{:FILL} ::x-coord ::y-coord ::colour))
 (s/def ::show (s/tuple #{:SHOW}))
 (s/def ::quit (s/tuple #{:QUIT}))
-(s/def ::command (s/tuple #{:COMMAND}
+(s/def ::command (s/tuple #{:COMMAND} ;; TODO: refactor into multi-spec
                           (s/or
                            :new ::new-image
                            :clear ::clear-image
@@ -38,7 +39,7 @@
                            :show ::show
                            :quit ::quit)))
 
-;; image specs
+;; image specs, checking internal consistency and value types
 (s/def :image/width ::coord-value)
 (s/def :image/height ::coord-value)
 (s/def :image/pixels (s/map-of (s/tuple ::coord-value ::coord-value) char?))
@@ -46,7 +47,12 @@
                  (s/keys :req [:image/width :image/height :image/pixels])
                  impl/every-pixel-in-bounds?))
 
-
+;; image-command pair specs, checking command arguments are valid for image
+(s/def ::image-command
+  (s/and
+    (s/cat :image ::image :command ::command)
+    (fn [{:keys [image command]}]
+      (impl/command-in-bounds? image command))))
 
 
 ;; you can't spec defmethods as fully as functions, so here I'm only using the
