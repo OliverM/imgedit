@@ -106,50 +106,102 @@
   [width height]
   #:image{:width width :height height :pixels {}})
 
+(s/fdef new-image
+  :args (s/cat :width pos-int? :height pos-int?)
+  :ret ::image
+  :fn #(and
+         (= (:image/width :ret) :width)
+         (= (:image/height :ret) :height)))
+
 (defn clear
   "Given an image, returns an image with the pixel information removed."
   [image]
   (assoc image :image/pixels {}))
 
+(s/fdef clear
+  :args (s/cat :image ::image )
+  :ret ::image
+  :fn #(= (:image/pixels :ret) {}))
+
+(defn- get-colour
+  "Return the colour at the supplied co-ordinates in the supplied image. Returns
+  the default value of 'O' if no pixel has been stored at that location so far."
+  [{:keys [image/pixels]} [_ x] [_ y]]
+  (get pixels [x y] \O))
+
 (defn pixel
   "Given an image and a set of pixel dimensions, returns an image with that pixel
   added to the image. This is the main means of adding pixel information to an
   image; other pixel-adding functions ultimately invoke this function."
-  [image [_ x :as x-coord] [_ y :as y-coord] [_ c]]
+  [image [_ x] [_ y] [_ c]]
   (assoc-in image [:image/pixels [x y]] c))
+
+(s/fdef pixel
+  :args (s/cat :image ::image :x ::x-coord :y ::y-coord :c ::colour)
+  :ret ::image
+  :fn #(and
+         (in-bounds? :image :x)
+         (in-bounds? :image :y)))
 
 (defn vertical-line
   "Given an image and a set of vertical line dimensions, returns an image with
   that line added to the image."
-  [image [_ x :as x-coord] [_ y1 y2 :as y-coord-pair] c]
+  [image [_ x] [_ y1 y2] c]
   (let [pixels (for [y (range (min y1 y2) (inc (max y1 y2)))]
                  [[:X x] [:Y y] c])]
     (reduce #(apply pixel %1 %2) image pixels)))
 
+(s/fdef vertical-line
+  :args (s/cat :image ::image :x ::x-coord :ys ::y-coord-pair :c ::colour)
+  :ret ::image
+  :fn #(and
+         (in-bounds? :image :x)
+         (in-bounds? :image :ys)))
+
 (defn horizontal-line
   "Given an image and a set of horizontal line dimensions, returns an image with
   that line added to the image."
-  [image [_ x1 x2 :as x-coord-pair] [_ y :as y-coord] c]
+  [image [_ x1 x2] [_ y] c]
   (let [pixels (for [x (range (min x1 x2) (inc (max x1 x2)))]
                  [[:X x] [:Y y] c])]
     (reduce #(apply pixel %1 %2) image pixels)))
+
+(s/fdef vertical-line
+  :args (s/cat :image ::image :xs ::x-coord-pair :y ::y-coord :c ::colour)
+  :ret ::image
+  :fn #(and
+         (in-bounds? :image :xs)
+         (in-bounds? :image :y)))
 
 (defn- matching-neighbours
   "Given an image, an [x, y] co-ordinate and a colour, return the neighbours of
   that point matching that colour. Neighbours are contiguous (they share a
   side). When a pixel is not present in the sparse pixel representation the
   default colour of 'O' is used."
-  [{:keys [image/width image/height image/pixels]} [x y] c]
+  [{:keys [image/width image/height] :as image} [x y] c]
   (for [dx [(dec x) x (inc x)]
         dy [(dec y) y (inc y)]
-        :when (and (>= dx 1) ;; check in bounds of image...
+        :when (and
+                (>= dx 1) ;; check candidate in bounds of image...
                 (>= dy 1)
                 (<= dx width)
                 (<= dy height)
                 (or (= x dx) (= y dy)) ;; and not corner pixel to pixel
                 (not (and (= x dx) (= y dy))) ;; and not same pixel
-                (= c (get pixels [dx dy] \O)))] ;; and has same colour
+                (= c (get-colour image [:X dx] [:Y dy])))] ;; and has same colour
     [dx dy]))
+
+(s/fdef matching-neighbours
+  :args (s/cat
+          :image ::image
+          :coord (s/tuple :x pos-int? :y pos-int?)
+          :colour char?)
+  :ret (s/coll-of (s/tuple :dx pos-int? :dy pos-int?) :kind vector)
+  :fn #(and
+         (and
+           (in-bounds? :image [:X :x])
+           (in-bounds? :image [:Y :y])
+           (<= 0 (count :ret) 4)))) ;; zero to four neighbours found
 
 (defn fill [image [_ x :as x-coord] [_ y :as y-coord] c]
   "Given an image, pixel co-ordinates and a colour, colours the pixel at that
@@ -157,7 +209,7 @@
   pixel's colour. Contiguous pixels share sides (i.e. diagonally-touching pixels
   are excluded). When no pixel at the queried location is found, the default
   colour of 'O' is used."
-  (let [source-colour (get-in image [:image/pixels [x y]] \O)]
+  (let [source-colour (get-colour image x-coord y-coord)]
     (loop [image image
            candidates [[x y]]]
       (if (empty? candidates)
@@ -169,18 +221,29 @@
             (into (next candidates)
               (matching-neighbours updated-image [cx cy] source-colour))))))))
 
+(s/fdef fill
+  :args (s/cat :image ::image :x ::x-coord :y ::y-coord :c ::colour)
+  :ret ::image
+  :fn #(and
+         (in-bounds? :image :x)
+         (in-bounds? :image :y)))
+
 (defn show
   "Display an image via stdout. Transforms the sparse map representation of pixels
   into an array of characters suitable for display, printing it by side-effect.
   When no pixel data is found at a location, the default colour of 'O' is used.
   Returns the image."
-  [{:keys [image/width image/height image/pixels] :as image}]
+  [{:keys [image/width image/height] :as image}]
   (let [image-lines (partition width
                       (for [y (range 1 (inc height))
                             x (range 1 (inc width))]
-                        (get pixels [x y] \O)))]
+                        (get-colour image [:X x] [:Y y])))]
     (doseq [line image-lines] (run! print line) (newline)))
   image)
+
+(s/fdef show
+  :args (s/cat :image ::image)
+  :ret ::image)
 
 (defn quit
   []
