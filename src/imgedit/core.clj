@@ -91,7 +91,7 @@
 (s/def :image/pixels (s/map-of (s/tuple ::coord-value ::coord-value) char?))
 (s/def ::image (s/keys :req [:image/width :image/height :image/pixels]))
 
-(defn in-bounds?
+(defn- in-bounds?
   "Is the supplied dimension in bounds of the supplied image?"
   [{:keys [image/width image/height]} [dimension value]]
   (case dimension
@@ -101,24 +101,34 @@
     :YS (let [[y1 y2] value] (and (<= y1 height) (<= y2 height)))))
 
 (defn new-image
+  "Create a new image from the supplied dimensions. Uses a sparse map
+  representation of pixels."
   [width height]
   #:image{:width width :height height :pixels {}})
 
 (defn clear
+  "Given an image, returns an image with the pixel information removed."
   [image]
   (assoc image :image/pixels {}))
 
 (defn pixel
+  "Given an image and a set of pixel dimensions, returns an image with that pixel
+  added to the image. This is the main means of adding pixel information to an
+  image; other pixel-adding functions ultimately invoke this function."
   [image [_ x :as x-coord] [_ y :as y-coord] [_ c]]
   (assoc-in image [:image/pixels [x y]] c))
 
 (defn vertical-line
+  "Given an image and a set of vertical line dimensions, returns an image with
+  that line added to the image."
   [image [_ x :as x-coord] [_ y1 y2 :as y-coord-pair] c]
   (let [pixels (for [y (range (min y1 y2) (inc (max y1 y2)))]
                  [[:X x] [:Y y] c])]
     (reduce #(apply pixel %1 %2) image pixels)))
 
 (defn horizontal-line
+  "Given an image and a set of horizontal line dimensions, returns an image with
+  that line added to the image."
   [image [_ x1 x2 :as x-coord-pair] [_ y :as y-coord] c]
   (let [pixels (for [x (range (min x1 x2) (inc (max x1 x2)))]
                  [[:X x] [:Y y] c])]
@@ -126,7 +136,9 @@
 
 (defn- matching-neighbours
   "Given an image, an [x, y] co-ordinate and a colour, return the neighbours of
-  that point matching that colour. Neighbours are contiguous (they share a side)."
+  that point matching that colour. Neighbours are contiguous (they share a
+  side). When a pixel is not present in the sparse pixel representation the
+  default colour of 'O' is used."
   [{:keys [image/width image/height image/pixels]} [x y] c]
   (for [dx [(dec x) x (inc x)]
         dy [(dec y) y (inc y)]
@@ -140,6 +152,11 @@
     [dx dy]))
 
 (defn fill [image [_ x :as x-coord] [_ y :as y-coord] c]
+  "Given an image, pixel co-ordinates and a colour, colours the pixel at that
+  location that colour, as well as all contiguous pixels sharing the original
+  pixel's colour. Contiguous pixels share sides (i.e. diagonally-touching pixels
+  are excluded). When no pixel at the queried location is found, the default
+  colour of 'O' is used."
   (let [source-colour (get-in image [:image/pixels [x y]] \O)]
     (loop [image image
            candidates [[x y]]]
@@ -153,9 +170,10 @@
               (matching-neighbours updated-image [cx cy] source-colour))))))))
 
 (defn show
-  "Display an image. Meets the spec of a default colour of 'O' by using it as the
-  not-found value for get (when no pixels have been written to that [x y]
-  position)."
+  "Display an image via stdout. Transforms the sparse map representation of pixels
+  into an array of characters suitable for display, printing it by side-effect.
+  When no pixel data is found at a location, the default colour of 'O' is used.
+  Returns the image."
   [{:keys [image/width image/height image/pixels] :as image}]
   (let [image-lines (partition width
                       (for [y (range 1 (inc height))
@@ -165,8 +183,8 @@
   image)
 
 (defn quit
-  [image]
-  image)
+  []
+  (System/exit 0))
 
 ;; you can't spec defmethods as fully as functions, so here I'm only using the
 ;; defmulti command* to invoke the correct command function based on the command
@@ -175,7 +193,7 @@
 (defmethod command* :NEW
   [image [_ [_ [_ w] [_ h]]]] (new-image w h))
 (defmethod command* :CLEAR
-  [image command] (clear image))
+  [image _] (clear image))
 (defmethod command* :PIXEL
   [image [_ [_ x-coord y-coord colour]]]
   (pixel image x-coord y-coord colour))
@@ -189,9 +207,9 @@
   [image [_ [_ x-coord y-coord colour]]]
   (fill image x-coord y-coord colour))
 (defmethod command* :SHOW
-  [image command] (show image))
+  [image _] (show image))
 (defmethod command* :QUIT
-  [image command] (quit image))
+  [_ _] (quit))
 
 (defn pump
   "Handle user input and maintain state. Each pump invocation accepts and returns
@@ -210,4 +228,5 @@
 (defn -main
   "Main entry point. Launch the interactive session with a default blank image."
   [& args]
+  (println "OnThe Market Test, by Oliver Mooney (oliver.mooney@gmail.com)")
   (pump (new-image 10 10)))
