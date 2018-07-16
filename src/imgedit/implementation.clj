@@ -5,10 +5,10 @@
   "Is the supplied dimension in bounds of the supplied image?"
   [{:keys [image/width image/height]} [dimension & value]]
   (case dimension
-    :X (<= (first value) width)
-    :XS (let [[x1 x2] value] (and (<= x1 width) (<= x2 width)))
-    :Y (<= (first value) height)
-    :YS (let [[y1 y2] value] (and (<= y1 height) (<= y2 height)))))
+    :X (<= 1 (first value) width)
+    :XS (let [[x1 x2] value] (and (<= 1 x1 width) (<= 1 x2 width)))
+    :Y (<= 1 (first value) height)
+    :YS (let [[y1 y2] value] (and (<= 1 y1 height) (<= 1 y2 height)))))
 
 (defn command-in-bounds?
   "Check if the supplied conformed command is in bounds of the supplied image.
@@ -44,7 +44,7 @@
   [image]
   (assoc image :image/pixels {}))
 
-(defn- get-colour
+(defn get-colour
   "Return the colour at the supplied co-ordinates in the supplied image. Returns
   the default value of 'O' if no pixel has been stored at that location so far."
   [{:keys [image/pixels]} [_ x] [_ y]]
