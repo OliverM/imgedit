@@ -196,13 +196,14 @@
   :ret ::image
   :fn (fn [{:keys [args ret]}]
         (and
+          (= (-> ret :image/pixels) {} )
           (= (-> ret :image/width) (:width args))
           (= (-> ret :image/height) (:height args)))))
 
 (s/fdef impl/clear
   :args (s/cat :image ::image)
   :ret ::image
-  :fn #(= (-> % :ret :image/pixels count) 0))
+  :fn #(= (-> % :ret :image/pixels) {}))
 
 (s/fdef impl/get-colour
   :args (s/with-gen
