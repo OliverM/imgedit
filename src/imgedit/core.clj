@@ -9,6 +9,15 @@
             [imgedit.specs :as is])
   (:gen-class))
 
+(defn pump*
+  [image command-str]
+  (let [command (p/parse command-str)]
+    (if (s/valid? ::is/image-command [image command])
+      (is/command* image command)
+      (do
+        (s/explain ::is/image-command [image command])
+         image))))
+
 (defn pump
   "Handle user input and maintain state. Each pump invocation accepts and returns
   an image, either unchanged if the input was erroneous or with the command
@@ -16,15 +25,12 @@
   [image]
   (print "> ")
   (flush)
-  (let [command (p/parse (read-line))]
-    (if (s/valid? ::is/image-command [image command])
-      (recur (is/command* image command))
-      (do
-        (s/explain ::is/image-command [image command])
-        (recur image)))))
+  (let [command-str (read-line)]
+    (recur (pump* image command-str))))
 
 (defn -main
   "Main entry point. Launch the interactive session with a default blank image."
   [& args]
   (println "OnTheMarket Test, by Oliver Mooney (oliver.mooney@gmail.com)")
   (pump (impl/new-image 10 10)))
+
