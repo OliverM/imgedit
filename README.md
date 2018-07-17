@@ -10,7 +10,8 @@ If neither is installed on your machine, install:
 2. Leiningen (via the instructions at https://leiningen.org)
 
 Once both are installed, clone the project at the command line with 
-`git clone https://github.com/OliverM/imgedit.git`
+
+    git clone https://github.com/OliverM/imgedit.git
 
 This will install the source into the imgedit directory.
 
@@ -18,7 +19,7 @@ This will install the source into the imgedit directory.
 
 In the project directory, type `lein run` at the command line to launch the interface.
 
-To run tests, in the project directory type `lein test`.
+Similarly, to run tests, in the project directory type `lein test`.
 
 ## Implementation discussion
 I implemented the front-end parser using Instaparse. I hadn't used Instaparse previously and wanted to gain some experience using it. On the whole it went smoothly but there is an overlap between its post-parsing functionality and spec's `conform` functionality, so in general I didn't use the latter as widely as I might otherwise.
