@@ -1,5 +1,6 @@
 (ns imgedit.specs-test
   (:require [imgedit.specs :as sut]
+            [imgedit.implementation :refer [new-image]]
             [clojure.spec.alpha :as s]
             [clojure.test :as t :refer [deftest testing is are]]))
 
@@ -41,3 +42,18 @@
     [:COMMAND [:FILL [:X 5] [:Y 0] [:COLOUR \f]]]
     [:COMMAND [:FILL [:X 5] [:Y 251] [:COLOUR \f]]]))
 
+(deftest valid-image-command-dimensions
+  (let [image (new-image 10 10)]
+    (are [image command] (s/valid? ::sut/image-command [image command])
+      image [:COMMAND [:PIXEL [:X 1] [:Y 10] [:COLOUR \i]]]
+      image [:COMMAND [:VERTICAL [:X 5] [:YS 1 10] [:COLOUR \x]]]
+      image [:COMMAND [:HORIZONTAL [:XS 1 10] [:Y 5] [:COLOUR \y]]]
+      image [:COMMAND [:FILL [:X 5] [:Y 5] [:COLOUR \i]]])))
+
+(deftest invalid-image-command-dimensions
+  (let [image (new-image 10 10)]
+    (are [image command] (not (s/valid? ::sut/image-command [image command]))
+      image [:COMMAND [:PIXEL [:X 0] [:Y 10] [:COLOUR \i]]]
+      image [:COMMAND [:VERTICAL [:X 5] [:YS 1 50] [:COLOUR \x]]]
+      image [:COMMAND [:HORIZONTAL [:XS 1000 10] [:Y 5] [:COLOUR \y]]]
+      image [:COMMAND [:FILL [:X 5] [:Y 2323232] [:COLOUR \i]]])))
