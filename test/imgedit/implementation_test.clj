@@ -31,7 +31,6 @@
 
 ;; exercising the implementation functions with the fdef generators in imgedit.specs
 
-
 (deftest new-image
   (checking `sut/new-image))
 
@@ -54,7 +53,18 @@
   (checking `sut/matching-neighbours) )
 
 (deftest fill
-  (checking `sut/fill 20) )
+  (checking `sut/fill 10)
+  (let [test-image (-> (sut/new-image 11 11)
+                     (sut/vertical-line [:X 6] [:YS 1 11] [:COLOUR \L])
+                     (sut/fill [:X 3] [:Y 3] [:COLOUR \A])
+                     (sut/fill [:X 8] [:Y 8] [:COLOUR \B])
+                     (sut/fill [:X 6] [:Y 6] [:COLOUR \C]))
+        count-pixels (fn [image c]
+                       (count (filter #(= % c) (vals (:image/pixels image)))))]
+    (testing
+        (is (= (count-pixels test-image \A) 55))
+        (is (= (count-pixels test-image \B) 55))
+        (is (= (count-pixels test-image \C) 11)))))
 
 (deftest show
   (with-out-str (checking `sut/show 5)))
