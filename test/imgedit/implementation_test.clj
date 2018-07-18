@@ -38,22 +38,22 @@
 (deftest clear
   (checking `sut/clear))
 
-(deftest pixel
+(deftest get-colour
   (checking `sut/get-colour))
 
 (deftest pixel
   (checking `sut/pixel) )
 
-(deftest pixel
+(deftest vertical-line
   (checking `sut/vertical-line) )
 
-(deftest pixel
+(deftest horizontal-line
   (checking `sut/horizontal-line) )
 
-(deftest pixel
+(deftest matching-neighbours
   (checking `sut/matching-neighbours) )
 
-(deftest pixel
+(deftest fill
   (checking `sut/fill 20) )
 
 (deftest show

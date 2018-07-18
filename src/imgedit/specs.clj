@@ -248,10 +248,13 @@
                  (image-gen x y)
                  (param-gen :X x) (param-gen :YS y y) (s/gen ::colour)))))
   :ret ::image
-  :fn #(let [image (-> % :args :image)
-             x (-> % :args :x)
-             ys (-> % :args :ys)]
-         (and (impl/in-bounds? image x) (impl/in-bounds? image ys))))
+  :fn #(let [{{:keys [x ys c]} :args ret :ret} %
+             y1-colour (impl/get-colour ret x [:Y (second ys)])
+             y2-colour (impl/get-colour ret x [:Y (nth ys 2)])]
+         (and
+           ;; are both start and end pixels the expected colour
+           (= c [:COLOUR y1-colour])
+           (= c [:COLOUR y2-colour]))))
 
 (s/fdef impl/horizontal-line
   :args (s/with-gen
@@ -262,10 +265,13 @@
                  (image-gen x y)
                  (param-gen :XS x x) (param-gen :Y y) (s/gen ::colour)))))
   :ret ::image
-  :fn #(let [image (-> % :args :image)
-             xs (-> % :args :xs)
-             y (-> % :args :y)]
-         (and (impl/in-bounds? image xs) (impl/in-bounds? image y))))
+  :fn #(let [{{:keys [xs y c]} :args ret :ret} %
+             x1-colour (impl/get-colour ret [:Y (second xs)] y)
+             x2-colour (impl/get-colour ret [:Y (nth xs 2)] y)]
+         (and
+           ;; are both start and end pixels the expected colour
+           (= c [:COLOUR x1-colour])
+           (= c [:COLOUR x2-colour]))))
 
 (s/fdef impl/matching-neighbours
   :args (s/with-gen (s/cat
@@ -279,12 +285,18 @@
                  (gen/tuple (coord-value-gen x) (coord-value-gen y))
                  (s/gen ::colour-value)))))
   :ret (s/coll-of (s/tuple ::coord-value ::coord-value) :kind vector)
-  :fn #(let [image (-> % :args :image)
-             [x y] (-> % :args :coord)]
+  :fn #(let [{{:keys [image colour]} :args ret :ret} %]
          (and
-           (impl/in-bounds? image [:X x])
-           (impl/in-bounds? image [:Y y])
-           (<= 0 (count (:ret %)) 4))))  ;; zero to four neighbours found
+           (<= 0 (count ret) 4) ;; zero to four neighbours found
+           (every? (fn [[x y]]
+                     (and ;; all neighbours in bounds
+                       (impl/in-bounds? image [:X x])
+                       (impl/in-bounds? image [:Y y])))
+             ret)
+           (every? ;; all neighbours the right colour
+             (fn [[x y]]
+               (= [:COLOUR colour] [:COLOUR (impl/get-colour image [:X x] [:Y y])]))
+             ret))))
 
 (s/fdef impl/fill
   :args (s/with-gen
@@ -296,12 +308,17 @@
                  (param-gen :X x) (param-gen :Y y)
                  (s/gen ::colour)))))
   :ret ::image
-  :fn #(let [image (-> % :args :image)
-              x (-> % :args :x)
-              y (-> % :args :y)]
-          (and
-            (impl/in-bounds? image x)
-            (impl/in-bounds? image y))))
+  :fn #(let [{{:keys [image x y c]} :args ret :ret} %
+             mns (impl/matching-neighbours
+                   image [(second x) (second y)] (second c))]
+         (and
+           (= c [:COLOUR (impl/get-colour ret x y)])
+           (every?
+             ;; all matching neighbours in first image are are changed
+             (fn [[x y]]
+               (= c [:COLOUR (impl/get-colour ret [:X x] [:Y y])]))
+             mns))
+          ))
 
 (s/fdef impl/show
   :args (s/cat :image ::image)

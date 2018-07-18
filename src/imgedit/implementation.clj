@@ -73,7 +73,7 @@
                  [[:X x] [:Y y] c])]
     (reduce #(apply pixel %1 %2) image pixels)))
 
-(defn- matching-neighbours
+(defn matching-neighbours
   "Given an image, an [x, y] co-ordinate and a colour, return the neighbours of
   that point matching that colour. Neighbours are contiguous (they share a
   side). When a pixel is not present in the sparse pixel representation the
