@@ -62,9 +62,12 @@
         count-pixels (fn [image c]
                        (count (filter #(= % c) (vals (:image/pixels image)))))]
     (testing
-        (is (= (count-pixels test-image \A) 55))
-        (is (= (count-pixels test-image \B) 55))
-        (is (= (count-pixels test-image \C) 11)))))
+      (is (= (count-pixels test-image \A) 55)
+        "The left side of the test image has the expected number of pixels coloured A'.")
+      (is (= (count-pixels test-image \B) 55)
+        "The right side of the test image has the expected number of pixels coloured 'B'.")
+      (is (= (count-pixels test-image \C) 11)
+        "The dividing line of the test image has the expected number of pixels coloured 'C'"))))
 
 (deftest show
   (with-out-str (checking `sut/show 5)))
