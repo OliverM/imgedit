@@ -96,16 +96,18 @@
   are excluded). When no pixel at the queried location is found, the default
   colour of 'O' is used."
   (let [source-colour (get-colour image x-coord y-coord)]
-    (loop [image image
-           candidates [[x y]]]
-      (if (empty? candidates)
-        image
-        (let [[cx cy] (first candidates)
-              updated-image (pixel image [:X cx] [:Y cy] c)]
-          (recur
-            updated-image
-            (into (next candidates)
-              (matching-neighbours updated-image [cx cy] source-colour))))))))
+    (if (= [:COLOUR source-colour] c)
+      image ;; source matches destination
+      (loop [image image
+             candidates [[x y]]]
+        (if (empty? candidates)
+          image
+          (let [[cx cy] (first candidates)
+                updated-image (pixel image [:X cx] [:Y cy] c)]
+            (recur
+              updated-image
+              (into (next candidates)
+                (matching-neighbours updated-image [cx cy] source-colour)))))))))
 
 (defn show
   "Display an image via stdout. Transforms the sparse map representation of pixels

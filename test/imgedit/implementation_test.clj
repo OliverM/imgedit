@@ -53,7 +53,7 @@
   (checking `sut/matching-neighbours) )
 
 (deftest fill
-  (checking `sut/fill 10)
+  (checking `sut/fill 100)
   (let [test-image (-> (sut/new-image 11 11)
                      (sut/vertical-line [:X 6] [:YS 1 11] [:COLOUR \L])
                      (sut/fill [:X 3] [:Y 3] [:COLOUR \A])
